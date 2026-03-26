@@ -6,23 +6,20 @@
 </head>
 <body>
     <nav>
-        <a href="/" style="font-size: 1.4rem;">EasyMatematika 📐</a>
+        <a href="/">EasyMatematika 📐</a>
         <div>
             {% if current_user.is_authenticated %}
-                <span>Ahoj, {{ current_user.username }}</span> | <a href="/logout">Odhlásit</a>
+                <span>{{ current_user.username }}</span> | <a href="/logout">Odhlásit</a>
             {% else %}
                 <a href="/login">Přihlášení</a> | <a href="/register">Registrace</a>
             {% endif %}
         </div>
     </nav>
     <div class="container">
-        <h1>Vyber si, co se chceš učit</h1>
+        <h1>Hlavní nabídka</h1>
         <div class="card">
-            <h3>🏫 9. Třída</h3>
-            <div style="display: flex; gap: 15px;">
-                <a href="/main/9-trida/zlomky" class="button" style="text-decoration:none; color:var(--main); font-weight:bold;">Zlomky</a>
-                <a href="/main/9-trida/procenta" class="button" style="text-decoration:none; color:var(--main); font-weight:bold;">Procenta</a>
-            </div>
+            <h3>9. Třída</h3>
+            <a href="/main/9-trida/zlomky">Zlomky</a> | <a href="/main/9-trida/procenta">Procenta</a>
         </div>
     </div>
 </body>
