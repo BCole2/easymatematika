@@ -5,10 +5,9 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = 'super_tajne_heslo_zmen_me'
+app.secret_key = 'matika-je-super-tajemstvi'
 
-# Nastavení databáze (Render ti dá URL, vlož ji sem nebo do Env Variables)
-# Pro lokální testování použije sqlite, na Renderu použije PostgreSQL
+# Připojení k databázi na Renderu
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///matika.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -16,32 +15,29 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# --- MODELY PRO DATABÁZI ---
+# --- DATABÁZOVÉ MODELY ---
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
-    # Role: 'admin', 'ucitel', 'zak'
-    role = db.Column(db.String(20), nullable=False, default='zak')
+    password_hash = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='zak') # admin, ucitel, zak
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
-
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-class TémaObsah(db.Model):
+class Modul(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    rocnik = db.Column(db.String(20), nullable=False) # např. '9-trida'
-    tema = db.Column(db.String(50), nullable=False)   # např. 'zlomky'
-    typ = db.Column(db.String(20), nullable=False)    # 'teorie', 'test'
+    rocnik = db.Column(db.String(20), nullable=False)
+    tema = db.Column(db.String(50), nullable=False)
+    typ = db.Column(db.String(20), nullable=False)
     obsah = db.Column(db.Text, nullable=False)
 
-# Vytvoření databáze (spustí se jen jednou)
+# Vytvoření tabulek
 with app.app_context():
     db.create_all()
-    # Vytvoříme prvního admina, pokud neexistuje (Jméno: admin, Heslo: admin123)
     if not User.query.filter_by(username='admin').first():
         admin = User(username='admin', role='admin')
         admin.set_password('admin123')
@@ -58,56 +54,53 @@ def load_user(user_id):
 def index():
     return render_template('index.html')
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        role = request.form.get('role', 'zak') # Výchozí role je žák
-
-        if User.query.filter_by(username=username).first():
-            flash('Uživatelské jméno již existuje.')
-            return redirect(url_for('register'))
-
-        new_user = User(username=username, role=role)
-        new_user.set_password(password)
-        db.session.add(new_user)
-        db.session.commit()
-        
-        flash('Registrace úspěšná. Nyní se můžeš přihlásit.')
-        return redirect(url_for('login'))
-        
-    return render_template('register.html')
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
-
-        if user and user.check_password(password):
-            login_user(user)
+        u = User.query.filter_by(username=request.form['username']).first()
+        if u and u.check_password(request.form['password']):
+            login_user(u)
             return redirect(url_for('index'))
-        else:
-            flash('Nesprávné jméno nebo heslo.')
-            
+        flash('Chybné údaje!')
     return render_template('login.html')
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        if User.query.filter_by(username=request.form['username']).first():
+            flash('Jméno už existuje!')
+        else:
+            u = User(username=request.form['username'], role=request.form['role'])
+            u.set_password(request.form['password'])
+            db.session.add(u)
+            db.session.commit()
+            return redirect(url_for('login'))
+    return render_template('register.html')
+
 @app.route('/logout')
-@login_required
 def logout():
     logout_user()
     return redirect(url_for('index'))
 
 @app.route('/main/<rocnik>/<tema>')
 def zobraz_tema(rocnik, tema):
-    moduly = TémaObsah.query.filter_by(rocnik=rocnik, tema=tema).all()
-    # Zkontrolujeme, jestli je přihlášený uživatel admin nebo učitel
+    moduly = Modul.query.filter_by(rocnik=rocnik, tema=tema).all()
     je_editor = current_user.is_authenticated and current_user.role in ['admin', 'ucitel']
     return render_template('tema.html', rocnik=rocnik, tema=tema, moduly=moduly, je_editor=je_editor)
 
-# --- Nastavení na Renderu ---
+@app.route('/add_modul', methods=['POST'])
+@login_required
+def add_modul():
+    if current_user.role not in ['admin', 'ucitel']: return "Zakázáno", 403
+    novy = Modul(
+        rocnik=request.form['rocnik'],
+        tema=request.form['tema'],
+        typ=request.form['typ'],
+        obsah=request.form['obsah']
+    )
+    db.session.add(novy)
+    db.session.commit()
+    return redirect(request.referrer)
+
 if __name__ == '__main__':
-    # Lokálně poběží na portu 5000
     app.run(debug=True)
