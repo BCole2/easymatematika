@@ -5,10 +5,10 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = 'super-tajny-klic-matika'
+app.secret_key = 'matika-je-super-tajemstvi-2026'
 
-# Připojení k databázi na Renderu
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///local.db')
+# Databáze - Render DATABASE_URL nebo lokální sqlite
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///matika.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -34,7 +34,7 @@ class Modul(db.Model):
     typ = db.Column(db.String(20), nullable=False)
     obsah = db.Column(db.Text, nullable=False)
 
-# Inicializace databáze
+# Inicializace databáze při startu
 with app.app_context():
     db.create_all()
     if not User.query.filter_by(username='admin').first():
@@ -47,7 +47,7 @@ with app.app_context():
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- TRASY ---
+# --- ROUTES ---
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -72,7 +72,6 @@ def register():
             new_user.set_password(request.form['password'])
             db.session.add(new_user)
             db.session.commit()
-            flash('Registrace úspěšná! Můžeš se přihlásit.')
             return redirect(url_for('login'))
     return render_template('register.html')
 
