@@ -5,18 +5,15 @@
     <title>Přihlášení</title>
 </head>
 <body>
-    <div class="container" style="max-width: 400px; margin-top: 80px;">
+    <div class="container" style="max-width: 400px;">
         <div class="card">
-            <h2 style="text-align: center;">Přihlášení</h2>
-            {% with messages = get_flashed_messages() %}
-              {% if messages %}{% for message in messages %}<div class="flash">{{ message }}</div>{% endfor %}{% endif %}
-            {% endwith %}
+            <h2>Přihlášení</h2>
+            {% with messages = get_flashed_messages() %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endwith %}
             <form method="POST">
                 <input type="text" name="username" placeholder="Uživatelské jméno" required>
                 <input type="password" name="password" placeholder="Heslo" required>
-                <button type="submit" style="width: 100%;">Přihlásit se</button>
+                <button type="submit">Vstoupit</button>
             </form>
-            <p style="text-align: center; margin-top: 15px;"><a href="/register">Ještě nemáš účet?</a></p>
         </div>
     </div>
 </body>
