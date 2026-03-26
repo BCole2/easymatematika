@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>{{ tema }}</title>
+</head>
+<body>
+    <nav><a href="/">Zpět</a> <span>{{ tema }}</span></nav>
+    <div class="container">
+        <h1>{{ tema|capitalize }} - {{ rocnik }}</h1>
+
+        {% for m in moduly %}
+        <div class="card">
+            <strong>{{ m.typ|upper }}:</strong>
+            <p>{{ m.obsah }}</p>
+        </div>
+        {% endfor %}
+
+        {% if je_editor %}
+        <div class="card" style="border-style: dashed;">
+            <h3>+ Přidat modul</h3>
+            <form action="/add_modul" method="POST">
+                <input type="hidden" name="rocnik" value="{{ rocnik }}">
+                <input type="hidden" name="tema" value="{{ tema }}">
+                <select name="typ">
+                    <option value="teorie">Teorie</option>
+                    <option value="priklad">Příklad</option>
+                </select>
+                <textarea name="obsah" placeholder="Sem napiš text..." required></textarea>
+                <button type="submit">Uložit na web</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
